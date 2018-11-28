@@ -60,6 +60,7 @@ from synapse.replication.tcp.resource import ReplicationStreamProtocolFactory
 from synapse.rest import ClientRestResource
 from synapse.rest.key.v2 import KeyApiV2Resource
 from synapse.rest.media.v0.content_repository import ContentRepoResource
+from synapse.rest.well_known import WellKnownResource
 from synapse.server import HomeServer
 from synapse.storage import DataStore, are_all_users_on_domain
 from synapse.storage.engines import IncorrectDatabaseSetup, create_engine
@@ -111,6 +112,7 @@ def build_resource_for_web_client(hs):
 
 class SynapseHomeServer(HomeServer):
     DATASTORE_CLASS = DataStore
+    resources = {}
 
     def _listener_http(self, config, listener_config):
         port = listener_config["port"]
@@ -121,7 +123,7 @@ class SynapseHomeServer(HomeServer):
         if tls and config.no_tls:
             return
 
-        resources = {}
+        self.resources[port] = resources = {}
         for res in listener_config["resources"]:
             for name in res["names"]:
                 resources.update(self._configure_named_resource(
@@ -195,6 +197,7 @@ class SynapseHomeServer(HomeServer):
                 "/_matrix/client/unstable": client_resource,
                 "/_matrix/client/v2_alpha": client_resource,
                 "/_matrix/client/versions": client_resource,
+                "/.well-known/matrix/client": WellKnownResource(self),
             })
 
             if self.get_config().saml2_enabled:
